@@ -1,0 +1,253 @@
+﻿@page "/nodes"
+
+@using Potholes_Detector
+@inject IJSRuntime JSR
+@inject IConfiguration configuration
+
+
+
+
+<div class="flex flex-col min-w-screen justify-between items-center">
+
+    <section class="bg-white ">
+        <div class=" text-center mt-12 lg:py-16 ">
+            <h1 class="mb-4 text-2xl font-extrabold tracking-tight leading-none text-gray-500 md:text-3xl lg:text-3xl ">Upload Image to Determine Pothole Severity</h1>
+            <p class="DancingScript text-lg font-normal text-gray-700 lg:text-xl sm:px-2  dark:text-gray-200">
+                Thank you for your interest in Pothole Detector! Whether you have questions, feedback</p>
+            <a href="/nodes">nodes</a>.
+        </div>
+    </section>
+
+ 
+  
+
+    <div class="flex flex-col justify-between w-full pl-8 pr-8 pb-8 -mt-8 ">
+        <div class="flex flex-col justify-center items-center w-1/2 -mt-12">
+            @if (string.IsNullOrEmpty(imageName))
+            {
+                <h1>Load and image</h1>
+            }
+            else if (isLoading)
+            {
+                <div class="flex flex-col  justify-center items-center w-1/2">
+                    <img src="/images/red_health.gif" />
+                    <h1 class="text-center">Loading....</h1>
+                </div>
+            }
+            else
+            {
+                <div class="">
+                    <img src="@imageName" style="width:500px; height:500px;" class="rounded-xl bg-slate-600" />
+                </div>
+            }
+        </div>
+       
+        <div class="flex flex-row items-start justify-center w-full ml-8 mr-8" >
+            <label for="dropzone-file" class="flex flex-col items-center justify-center  h-64 w-full border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                    </svg>
+                    <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span></p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
+                </div>
+                <InputFile id="dropzone-file" class="hidden" OnChange="@LoadImage" multiple></InputFile>
+            </label>
+
+            <div>
+                @if (errors.Count > 0)
+                {
+                    <h2>Errors </h2>
+
+                    @foreach (var error in errors)
+                    {
+                        <h1>@error</h1>
+                    }
+                }
+            </div>
+      
+                <div class="w-full ml-8">
+                    @if (topScores.Count > 0)
+                    {
+
+                    <h2 class="mb-4 text-2xl font-extrabold tracking-tight leading-none text-gray-500 md:text-3xl lg:text-3xl">Probability ranges </h2>
+
+                        @foreach (var score in topScores)
+                        {
+
+                                foreach (var kvp in score)
+                                {
+                                    <ol class="relative text-gray-500 border-s border-gray-200 dark:border-gray-700 dark:text-gray-400">
+                                        <li class="mb-10 ms-6">
+                                            <span class="absolute flex items-center justify-center w-8 h-8 bg-green-200 rounded-full -start-4 ring-4 ring-white dark:ring-gray-900 dark:bg-green-900">
+                                                <svg class="w-3.5 h-3.5 text-green-500 dark:text-green-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5.917 5.724 10.5 15 1.5" />
+                                                </svg>
+                                            </span>
+                                            <h3 class="font-medium leading-tight">@kvp.Key</h3>
+                                    <p class="text-sm m-2 bg-rose-700 p-2 text-2xl w-32 text-center text-white rounded-full">@kvp.Value %</p>
+                                        </li>
+
+                                    </ol>
+                                }
+                            
+                        }
+                    }
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+ 
+
+</div>
+
+@code {
+    public string imageName = "";
+    private long maxFileSize = 1024 * 1024 * 3;
+    private int maxAllowedFiles = 3;
+    private bool isLoading;
+    private List<string> errors = new();
+    private List<Dictionary<string,int>> topScores = new();
+    Dictionary<string, int> scoreEntry = new Dictionary<string, int>();
+
+
+    public string ResultData { get; set; }
+
+    public async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        errors.Clear();
+
+        if (e.FileCount > maxAllowedFiles)
+        {
+            errors.Add($"Error: Attempting to upload {e.FileCount} files, but only {maxAllowedFiles} files");
+            return;
+        }
+
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            try
+            {
+                string newFileName = Path.ChangeExtension(
+                    Path.GetRandomFileName(),
+                    Path.GetExtension(file.Name));
+
+
+                string path = Path.Combine(
+                    configuration.GetValue<string>("FileStorage"),
+                    "Ahmad",
+                    newFileName);
+
+                Directory.CreateDirectory(Path.Combine(
+                    configuration.GetValue<string>("FileStorage"),
+                    "Ahmad"
+                ));
+
+                using (FileStream fileStream = new(path, FileMode.Create))
+                {
+
+                    await file.OpenReadStream(maxFileSize).CopyToAsync(fileStream);
+
+                    var buffer = new byte[file.Size];
+                    await file.OpenReadStream(maxFileSize).ReadExactlyAsync(buffer);
+                    imageName = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+
+                }
+                await ClassifyImageAsync(path);
+
+
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"File: {file.Name} Error: {ex.Message}");
+            }
+        }
+
+    }
+
+    public async Task LoadImage(InputFileChangeEventArgs e)
+    {
+        errors.Clear();
+        topScores.Clear();
+        scoreEntry.Clear();
+        isLoading = true;
+
+        if (e.FileCount > maxAllowedFiles)
+        {
+            errors.Add($"Error: Attempting to upload {e.FileCount} files, but only {maxAllowedFiles} files");
+            return;
+        }
+        var file = e.File;
+
+        try
+        {
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream(maxFileSize).ReadExactlyAsync(buffer);
+            imageName = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+
+            string newFileName = Path.ChangeExtension(
+                    Path.GetRandomFileName(),
+                    Path.GetExtension(file.Name));
+
+            string path = Path.Combine(
+                configuration.GetValue<string>("FileStorage"),
+                "Ahmad",
+                newFileName);
+
+            Directory.CreateDirectory(Path.Combine(
+                configuration.GetValue<string>("FileStorage"),
+                "Ahmad"
+            ));
+
+            using (FileStream fileStream = new(path, FileMode.Create))
+            {
+                await file.OpenReadStream(maxFileSize).CopyToAsync(fileStream);
+            }
+            await ClassifyImageAsync(path);
+            File.Delete(path);
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"File: {file.Name} Error: {ex.Message}");
+
+        }
+        isLoading = false;
+    }
+
+
+
+    public async Task ClassifyImageAsync(string path)
+    {
+        topScores.Clear();
+        scoreEntry.Clear();
+
+        var imageBytes = File.ReadAllBytes(path);
+
+        var input = new MLModel.ModelInput();
+
+        input.ImageSource = imageBytes;
+
+        var sortedScoresWithLabel = MLModel.PredictAllLabels(input);
+
+        var highestScoreLabel = sortedScoresWithLabel.OrderByDescending(x => x.Value)
+                                                     .FirstOrDefault();
+
+        var topFourScores = sortedScoresWithLabel.OrderByDescending(x => x.Value)
+                                                 .Take(5)
+                                                 .Select(kv => (kv.Key, kv.Value))
+                                                 .ToList();
+
+        foreach(var score in topFourScores)
+        {
+            scoreEntry.Add(score.Key, (int)Math.Round(score.Value * 100));
+           
+        }
+        topScores.Add(scoreEntry);
+        ResultData = $"Selected image is a {highestScoreLabel.Key} with a high probability of {Math.Round(highestScoreLabel.Value * 100)} %";
+    }
+
+}

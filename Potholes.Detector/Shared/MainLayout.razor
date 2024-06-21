@@ -1,0 +1,30 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime Js
+
+<PageTitle>Potholes.Detector</PageTitle>
+
+
+<div class="2xl:container h-screen w-screen m-auto font-sans">
+    
+    <div class="flex flex-col h-screen w-screen justify-between">
+        <Potholes.Detector.Shared.Header />
+
+        <article>
+            @Body
+        </article>
+
+    
+    </div>
+
+</div>
+
+@code{
+    protected override async Task OnAfterRenderAsync(bool isFirstRender)
+    {
+        if (isFirstRender)
+        {
+            await Js.InvokeVoidAsync("window.initializeFlowbite");
+        }
+        await Js.InvokeVoidAsync("window.initializeFlowbite");
+    }
+}

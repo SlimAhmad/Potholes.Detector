@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  potholes.detector:
+    image: ${DOCKER_REGISTRY-}potholesdetector
+    build:
+      context: .
+      dockerfile: Potholes.Detector/Dockerfile

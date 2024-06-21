@@ -1,0 +1,1005 @@
+﻿@page "/"
+@using Potholes_Detector
+@using Microsoft.AspNetCore.Hosting
+@inject IJSRuntime JSR
+@inject IFileUpload fileUpload
+@inject IConfiguration configuration
+@inject IWebHostEnvironment Environment
+
+
+<div class="flex flex-col mt-12 min-w-screen h-screen">
+    <section class="mt-12">
+        <div class=" text-center ">
+            <h1 class="mb-4 text-2xl font-extrabold tracking-tight leading-none text-white md:text-3xl lg:text-3xl ">Upload Image to Determine Pothole Severity</h1>
+            <p class=" text-lg font-normal text-gray-500 lg:text-xl">
+                Thank you for your interest in Pothole Detector! Whether you have questions, feedback
+            </p>
+            <a href="/nodes">nodes</a>.
+        </div>
+    </section>
+
+    <div class="flex flex-row justify-between items-start">
+
+         <div class="flex flex-col justify-between w-1/2  ">
+        @if (!isVisible)
+        {
+                <div class="flex flex-col justify-center text-white items-center w-1/2">
+                    @if (string.IsNullOrEmpty(imageName))
+                    {
+                        <h1>Load and image</h1>
+                    }
+                    else if (isLoading)
+                    {
+                        <div class="flex flex-col  justify-center items-center w-1/2">
+                            <img src="/images/red_health.gif" />
+                            <h1 class="text-center text-white">Loading....</h1>
+                        </div>
+                    }
+                   
+                </div>
+
+                @if (!hideSelection)
+                {
+                    <div class="flex flex-row items-start justify-center w-full p-8">
+                        <label for="dropzone-file" class="flex flex-col items-center justify-center  h-64 w-full border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                                </svg>
+                                <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Click to upload</span></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>
+                            </div>
+                            <InputFile id="dropzone-file" class="hidden" OnChange="LoadImage" multiple type="file" _bl_2=""></InputFile>
+                        </label>
+
+                    </div>
+                }
+                
+         
+       
+        }
+
+            <div>
+                @if (errors.Count > 0)
+                {
+                    <h2>Errors </h2>
+
+                    @foreach (var error in errors)
+                    {
+                        <h1>@error</h1>
+                    }
+                }
+            </div>
+
+            <div class="flex flex-col">
+                <h2 class="mb-4 ml-8 text-2xl font-extrabold tracking-tight leading-none text-white md:text-3xl lg:text-3xl">Probability ranges </h2>
+            <div class="flex flex-row w-full ml-8">
+                @if (topScores.Count > 0)
+                {
+                        @if (hideSelection)
+                        {
+                            <div>
+                       
+                                    <div class="">
+                                        <img src="@imageName" class="rounded-xl h-64  bg-slate-600" />
+                                    </div>
+                     
+                            </div>
+                        }
+                        else
+                        {
+                            <button type="button" @onclick="@Reset" class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Reset</button>
+                        }
+
+                        @if (hideSelection)
+                        {
+                    <div>
+                  
+
+                        <div class="flex flex-col m-5">
+                                
+
+                            @foreach (var score in topScores)
+                            {
+
+                                foreach (var kvp in score)
+                                {
+                                    <div class="flex flex-col">
+                                        <h3 class="font-medium leading-tight text-white ">@kvp.Key</h3>
+                                        <div class="flex flex-row">
+                                              <svg class="w-5 h-5 me-2 text-rose-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                                            </svg>
+                                             <span class=" w-1/2 text-green-500 text-sm font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">@kvp.Value %</span>
+
+                                        </div>
+                                       
+                                    </div>
+                                }
+
+                            }
+                                <button type="button" @onclick="@Reset" class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Reset</button>
+                        </div>
+                    </div>
+                    }
+                }
+            </div>
+            </div>
+        </div>
+
+        
+        @if (isVisible)
+        {
+       
+               
+
+                <ul class="w-1/2 overflow-y-auto divide-y divide-gray-700 m-5">
+                     <h2 class="mb-4 ml-8 text-2xl font-extrabold tracking-tight leading-none text-white md:text-3xl lg:text-3xl">Remediations</h2>
+                    @foreach (var solution in remediation.Solutions)
+                    {
+                        <li class="pb-3 sm:pb-4">
+                            <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-white truncate">
+                                        @remediation.Category
+                                    </p>
+                                    <p class="text-sm text-gray-500 truncate dark:text-gray-400">
+                                        @remediation.Defect
+                                    </p>
+                                </div>
+                                <div class="inline-flex items-center text-base font-semibold text-white">
+                                   @solution
+                                </div>
+                            </div>
+                        </li>
+                    }
+
+                </ul>
+
+        }
+
+       
+
+        <div class="flex flex-col  mt-12">
+            @if (!isVisible)
+            {
+                <div class="flex flex-row p-5 items-center">
+                    <img src="/images//Potholes.png" class="h-12" />
+                    <h3 class=" font-semibold text-white ">Please select a defect</h3>
+                </div>
+
+                <ul class="items-center w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg sm:flex dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r dark:border-gray-600">
+                        <div class="flex items-center ps-3">
+                            <input id="horizontal-list-radio-license" type="radio" value="" name="list-radio" @onclick='(()=>FilterByCategory("depressions"))' class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                            <label for="horizontal-list-radio-license" class="w-full py-3 ms-2 text-sm font-medium text-gray-600">Depression</label>
+                        </div>
+                    </li>
+                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r dark:border-gray-600">
+                        <div class="flex items-center ps-3">
+                            <input id="horizontal-list-radio-id" type="radio" value="" checked=@selected @onclick='(()=>FilterByCategory("potholes"))' name="list-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                            <label for="horizontal-list-radio-id" class="w-full py-3 ms-2 text-sm font-medium text-gray-600">Potholes</label>
+                        </div>
+                    </li>
+                    <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r dark:border-gray-600">
+                        <div class="flex items-center ps-3">
+                            <input id="horizontal-list-radio-military" type="radio" value="" name="list-radio" @onclick='(()=>FilterByCategory("cracks"))' class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                            <label for="horizontal-list-radio-military" class="w-full py-3 ms-2 text-sm font-medium text-gray-600">Cracks</label>
+                        </div>
+                    </li>
+                    <li class="w-full dark:border-gray-600">
+                        <div class="flex items-center ps-3">
+                            <input id="horizontal-list-radio-passport" type="radio" value="" name="list-radio" @onclick='(()=>FilterByCategory("rutting"))' class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                            <label for="horizontal-list-radio-passport" class="w-full py-3 ms-2 text-sm font-medium text-gray-600">Rutting</label>
+                        </div>
+                    </li>
+                    <li class="w-full dark:border-gray-600">
+                        <div class="flex items-center ps-3">
+                            <input id="horizontal-list-radio-passport" type="radio" value="" name="list-radio" @onclick='(()=>FilterByCategory("raveling and weathering"))' class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                            <label for="horizontal-list-radio-passport" class="w-full py-3 ms-2 text-sm font-medium text-gray-600">Raveling and Weathering.</label>
+                        </div>
+                    </li>
+                    <li class="w-full dark:border-gray-600">
+                        <div class="flex items-center ps-3">
+                            <input id="horizontal-list-radio-passport" type="radio" value="" @onclick='(()=>FilterByCategory("shoving and corrugation"))' name="list-radio" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
+                            <label for="horizontal-list-radio-passport" class="w-full py-3 ms-2 text-sm font-medium text-gray-600">Shoving and Corrugation.</label>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="flex flex-col p-5">
+
+                    @foreach (var defects in Defect.Solutions)
+                    {
+                        <div class="flex items-center me-4 ">
+                            <input id="horizontal-list-radio-license" @ref=MyElementReference type="radio" @onclick='(()=>FilterByDefects(defects))' name="list-radio" class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2">
+                            <label for="horizontal-list-radio-license" class="w-full py-3 ms-2 text-sm font-medium text-white">@defects</label>
+                        </div>
+                    }
+
+                </div>
+            }
+
+        </div>
+
+
+
+    </div>
+    
+
+</div>
+
+
+@code {
+
+    bool isVisible;
+    bool hideSelection;
+    bool selected;
+    ElementReference MyElementReference;
+    public string imageName = "";
+    private long maxFileSize = 1024 * 1024 * 3;
+    private int maxAllowedFiles = 3;
+    private bool isLoading;
+    private List<string> errors = new();
+    private List<Dictionary<string, int>> topScores = new();
+    Dictionary<string, int> scoreEntry = new Dictionary<string, int>();
+    protected IWebHostEnvironment _Environment { get; set; }
+
+
+    public string ResultData { get; set; }
+
+    List<DefectList> Solutions = new List<DefectList>();
+    List<DefectList> defects = new List<DefectList>()
+    {
+       new DefectList
+       {
+           Solutions = new List<string>
+           {
+                "Light Raveling: Surface aggregate loss of up to 5 mm depth",
+	            "Moderate Raveling: Surface aggregate loss of 5 mm to 10 mm depth",
+	            "Severe Raveling: Surface aggregate loss of more than 10 mm depth",
+
+           },
+           Category = "Raveling and Weathering"
+       },
+
+          new DefectList
+       {
+           Solutions = new List<string>
+           {
+                "Minor Shoving: Less than 25 mm displacement",
+                "Moderate Shoving: 25 mm to 50 mm displacement",
+                "Severe Shoving: More than 50 mm displacement",
+
+
+           },
+           Category = "shoving and corrugation"
+       },
+           new DefectList
+       {
+           Solutions = new List<string>
+           {
+            "Minor Depressions: Less than 10 mm deep",
+            "Moderate Depressions: 10 mm to 25 mm deep",
+            "Severe Depressions: More than 25 mm deep",
+
+           },
+           Category = "depressions"
+       },
+          new DefectList
+       {
+           Solutions = new List<string>
+           {
+               "Shallow Rutting: Less than 10 mm deep",
+               "Moderate Rutting: 10 mm to 20 mm deep",
+               "Severe Rutting: More than 20 mm deep",
+           },
+           Category = "rutting"
+       },
+          new DefectList
+        {
+            Solutions = new List<string>
+            {
+                "Small Potholes: Less than 0.3 meters in diameter",
+                "Medium Potholes: 0.3 meters to 0.6 meters in diameter",
+                "Large Potholes: More than 0.6 meters in diameter",
+
+            },
+            Category = "potholes"
+        },
+         new DefectList
+        {
+            Solutions = new List<string>
+            {
+                "Hairline Cracks: Less than 1 mm wide",
+                "Narrow Cracks: 1 mm to 3 mm wide",
+                "Medium Cracks: 3 mm to 6 mm wide",
+                "Wide Cracks: More than 6 mm wide",
+
+
+            },
+            Category = "cracks"
+        },
+          new DefectList
+        {
+            Solutions = new List<string>
+            {
+                "Light Raveling: Surface aggregate loss of up to 5 mm depth",
+                "Moderate Raveling: Surface aggregate loss of 5 mm to 10 mm depth",
+                "Severe Raveling: Surface aggregate loss of more than 10 mm depth"
+
+
+
+            },
+            Category = "raveling and weathering"
+        }
+
+    };
+
+    List<Remediation> Remediations = new List<Remediation>();
+    List<Remediation> remediations = new List<Remediation>()
+    {
+        //Cracks
+        //Hairline Cracks: Less than 1 mm wide.
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Cracks",
+           Defect = "Hairline Cracks: Less than 1 mm wide"
+       },
+        //Narrow Cracks: 1 mm to 3 mm wide
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Cracks",
+           Defect = "Narrow Cracks: 1 mm to 3 mm wide"
+       },
+        //Medium Cracks: 3 mm to 6 mm wide
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Cracks",
+           Defect = "Medium Cracks: 3 mm to 6 mm wide"
+       },
+        //Wide Cracks: More than 6 mm wide
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Cracks",
+           Defect = "Wide Cracks: More than 6 mm wide"
+       },
+
+        //Potholes
+        //Medium Potholes: 0.3 meters to 0.6 meters in diameter.
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Potholes",
+           Defect = "Medium Potholes: 0.3 meters to 0.6 meters in diameter"
+       },
+        //Small Potholes: Less than 0.3 meters in diameter
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Potholes",
+           Defect = "Small Potholes: Less than 0.3 meters in diameter"
+       },
+        //Large Potholes: More than 0.6 meters in diameter
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Potholes",
+           Defect = "Large Potholes: More than 0.6 meters in diameter"
+       },
+
+         //Rutting
+        //Shallow Rutting: Less than 10 mm deep.
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Rutting",
+           Defect = "Shallow Rutting: Less than 10 mm deep"
+       },
+        //Moderate Rutting: 10 mm to 20 mm deep
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Rutting",
+           Defect = "Moderate Rutting: 10 mm to 20 mm deep"
+       },
+        //Severe Rutting: More than 20 mm deep
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Rutting",
+           Defect = "Severe Rutting: More than 20 mm deep"
+       },
+
+        //Depressions
+        //Minor Depressions: Less than 10 mm deep.
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Depressions",
+           Defect = "Minor Depressions: Less than 10 mm deep"
+       },
+        //Moderate Depressions: 10 mm to 25 mm deep
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Depressions",
+           Defect = "Moderate Depressions: 10 mm to 25 mm deep"
+       },
+        //Severe Depressions: More than 25 mm deep
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Depressions",
+           Defect = "Severe Depressions: More than 25 mm deep"
+       },
+
+        //Shoving and Corrugation
+        //Minor Shoving: Less than 25 mm displacement
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Shoving and Corrugation",
+           Defect = "Minor Shoving: Less than 25 mm displacement"
+       },
+        //Moderate Shoving: 25 mm to 50 mm displacement
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Shoving and Corrugation",
+           Defect = "Moderate Shoving: 25 mm to 50 mm displacement"
+       },
+        //Severe Shoving: More than 50 mm displacement
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Shoving and Corrugation",
+           Defect = "Severe Shoving: More than 50 mm displacement"
+       },
+
+        //Raveling and Weathering
+        //Light Raveling: Surface aggregate loss of up to 5 mm depth.
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Raveling and Weathering",
+           Defect = "Light Raveling: Surface aggregate loss of up to 5 mm depth"
+       },
+        //Moderate Raveling: Surface aggregate loss of 5 mm to 10 mm depth.
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Raveling and Weathering",
+           Defect = "Moderate Raveling: Surface aggregate loss of 5 mm to 10 mm depth"
+       },
+        //Severe Raveling: Surface aggregate loss of more than 10 mm depth
+        new Remediation
+       {
+
+           Solutions = new List<string>
+           {
+                "Resurfacing (Overlay)",
+                "Mill and Fill",
+                "Full-Depth Reclamation (FDR)",
+                "Cold In-Place Recycling (CIR)",
+                "Hot In-Place Recycling (HIR)",
+                "Crack Sealing",
+                "Patching",
+                "Seal Coating",
+                "Micro-Surfacing",
+                "Slurry Seal",
+                "Fog Seal",
+                "Chip Seal",
+                "Ultra-Thin Bonded Wearing Course (UTBWC)",
+                "In-Place Recycling Techniques",
+
+
+           },
+           Category = "Raveling and Weathering",
+           Defect = "Severe Raveling: Surface aggregate loss of more than 10 mm depth"
+       },
+
+    };
+
+    Remediation remediation = new Remediation();
+    DefectList Defect = new DefectList();
+
+    protected override void OnInitialized()
+    {
+        Defect = defects.Where(x => x.Category == "potholes").Select(x => new DefectList
+            {
+                Solutions = x.Solutions
+            }).FirstOrDefault();
+        selected = true;
+    }
+
+    public void Reset()
+    {
+        remediation = new Remediation();
+        isVisible = false;
+        hideSelection = false;
+        selected = true;
+    }
+
+    /// <param name="filter"></param>
+    public void FilterByCategory(string filter)
+    {
+        selected = false;
+        Defect = defects.Where(x => x.Category == filter.ToLower()).Select(x => new DefectList
+            {
+                Solutions = x.Solutions
+            }).FirstOrDefault();
+
+    }
+
+    /// <param name="filter"></param>
+    public void FilterByDefects(string filter)
+    {
+        remediation = remediations.Where(x => x.Defect == filter).Select(x => new Remediation
+            {
+                Solutions = x.Solutions,
+                Category = x.Category,
+                Defect = x.Defect
+            }).FirstOrDefault();
+        isVisible = true;
+
+
+    }
+
+    public async Task LoadImage(InputFileChangeEventArgs e)
+    {
+        errors.Clear();
+        topScores.Clear();
+        scoreEntry.Clear();
+        isLoading = true;
+
+        if (e.FileCount > maxAllowedFiles)
+        {
+            errors.Add($"Error: Attempting to upload {e.FileCount} files, but only {maxAllowedFiles} files");
+            return;
+        }
+        var file = e.File;
+
+        try
+        {
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream(maxFileSize).ReadExactlyAsync(buffer);
+            imageName = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+
+            string newFileName = Path.ChangeExtension(
+                    Path.GetRandomFileName(),
+                    Path.GetExtension(file.Name));
+
+
+
+            // string path = Path.Combine(
+            //     configuration.GetValue<string>("FileStorage"),
+            //     "Ahmad",
+            //     newFileName);
+
+            // Directory.CreateDirectory(Path.Combine(
+            //     configuration.GetValue<string>("FileStorage"),
+            //     "Ahmad"
+            // ));
+
+            var a = fileUpload.GetContentRootPath();
+            //The File Path to store the image
+             var path = Path.Combine(a, "Media", newFileName);
+
+             var localPath = Path.Combine(a, "Media");
+                if (!Directory.Exists(localPath))
+                    Directory.CreateDirectory(localPath);
+
+            using (FileStream fileStream = new(path, FileMode.Create))
+            {
+                await file.OpenReadStream(maxFileSize).CopyToAsync(fileStream);
+            }
+            await ClassifyImageAsync(path);
+            File.Delete(path);
+        }
+        catch (Exception ex)
+        {
+            errors.Add($"File: { file.Name} Error: {ex.Message}");
+
+        }
+        isLoading = false;
+    }
+
+
+
+    public async Task ClassifyImageAsync(string path)
+    {
+        topScores.Clear();
+        scoreEntry.Clear();
+
+        var imageBytes = File.ReadAllBytes(path);
+
+        var input = new MLModel.ModelInput();
+
+        input.ImageSource = imageBytes;
+
+        var sortedScoresWithLabel = MLModel.PredictAllLabels(input);
+
+        var highestScoreLabel = sortedScoresWithLabel.OrderByDescending(x => x.Value)
+                                                     .FirstOrDefault();
+
+        var topFourScores = sortedScoresWithLabel.OrderByDescending(x => x.Value)
+                                                 .Take(5)
+                                                 .Select(kv => (kv.Key, kv.Value))
+                                                 .ToList();
+
+        hideSelection = true;
+        foreach (var score in topFourScores)
+        {
+            scoreEntry.Add(score.Key, (int)Math.Round(score.Value * 100));
+
+        }
+        topScores.Add(scoreEntry);
+        ResultData = $"Selected image is a {highestScoreLabel.Key} with a high probability of {Math.Round(highestScoreLabel.Value * 100)} %";
+    }
+   
+    public class DefectList
+    {
+        public List<string> Solutions { get; set; }
+        public string Category { get; set; }
+    }
+
+    public class Remediation
+    {
+        public List<string> Solutions { get; set; }
+        public string Category { get; set; }
+        public string Defect { get; set; }
+    }
+
+}
