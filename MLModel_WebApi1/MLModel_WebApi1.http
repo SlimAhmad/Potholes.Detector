@@ -1,4 +1,0 @@
-﻿@MLModel_WebApi1_HostAddress = https://localhost:59891
-
-POST {{MLModel_WebApi1_HostAddress}}/predict
-Content-Type: application.json
